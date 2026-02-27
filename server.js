@@ -9,7 +9,9 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
-// Conexión a la base de datos usando variables de entorno (Railway)
+/* =========================
+   CONEXIÓN A BASE DE DATOS
+========================= */
 
 const db = mysql.createConnection({
   host: process.env.MYSQLHOST,
@@ -24,6 +26,41 @@ db.connect((err) => {
     console.error("❌ Error al conectar a la base de datos:", err);
   } else {
     console.log("✅ Base de datos conectada correctamente");
+
+    // 🔥 Crear tabla si no existe
+    const crearTabla = `
+      CREATE TABLE IF NOT EXISTS productos (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        nombre VARCHAR(100) NOT NULL,
+        tipo VARCHAR(50) NOT NULL,
+        cantidad INT NOT NULL,
+        precio DECIMAL(10,2) NOT NULL,
+        imagen VARCHAR(255) NOT NULL
+      )
+    `;
+
+    db.query(crearTabla, (err) => {
+      if (err) {
+        console.error("❌ Error creando la tabla:", err);
+      } else {
+        console.log("✅ Tabla productos lista");
+
+        // 🔥 Insertar productos si la tabla está vacía
+        db.query("SELECT COUNT(*) AS total FROM productos", (err, results) => {
+          if (!err && results[0].total === 0) {
+            const insertarProductos = `
+              INSERT INTO productos (nombre, tipo, cantidad, precio, imagen)
+              VALUES
+              ('Concha', 'Pan', 10, 12.00, 'https://via.placeholder.com/150'),
+              ('Dona', 'Pan', 8, 15.00, 'https://via.placeholder.com/150'),
+              ('Pastel Chocolate', 'Pastel', 5, 250.00, 'https://via.placeholder.com/150')
+            `;
+            db.query(insertarProductos);
+            console.log("✅ Productos iniciales insertados");
+          }
+        });
+      }
+    });
   }
 });
 
@@ -42,7 +79,7 @@ app.get("/productos", (req, res) => {
 });
 
 /* =========================
-   COMPRAR PRODUCTO (RESTAR 1)
+   COMPRAR PRODUCTO
 ========================= */
 app.post("/comprar/:id", (req, res) => {
   const id = req.params.id;
@@ -74,7 +111,7 @@ app.post("/agregar", (req, res) => {
   db.query(
     "INSERT INTO productos (nombre, tipo, cantidad, precio, imagen) VALUES (?, ?, ?, ?, ?)",
     [nombre, tipo, cantidad, precio, imagen],
-    (err, result) => {
+    (err) => {
       if (err) {
         console.error(err);
         res.status(500).send("Error al agregar producto");
@@ -95,7 +132,7 @@ app.put("/editar/:id", (req, res) => {
   db.query(
     "UPDATE productos SET nombre = ?, tipo = ?, cantidad = ?, precio = ? WHERE id = ?",
     [nombre, tipo, cantidad, precio, id],
-    (err, result) => {
+    (err) => {
       if (err) {
         console.error(err);
         res.status(500).send("Error al editar producto");
@@ -112,7 +149,7 @@ app.put("/editar/:id", (req, res) => {
 app.delete("/eliminar/:id", (req, res) => {
   const id = req.params.id;
 
-  db.query("DELETE FROM productos WHERE id = ?", [id], (err, result) => {
+  db.query("DELETE FROM productos WHERE id = ?", [id], (err) => {
     if (err) {
       console.error(err);
       res.status(500).send("Error al eliminar producto");
