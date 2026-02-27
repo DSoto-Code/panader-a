@@ -10,7 +10,9 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
 // Conexión a la base de datos usando variables de entorno (Railway)
-const db = mysql.createConnection({
+const mysql = require("mysql2");
+
+const connection = mysql.createConnection({
   host: process.env.MYSQLHOST,
   user: process.env.MYSQLUSER,
   password: process.env.MYSQLPASSWORD,
